@@ -8,17 +8,41 @@
     <meta property="og:description" content="สแกน QR Code ได้ทันทีด้วยการลากคลุมจอ หรือกด Ctrl+V วางรูปภาพ">
     <meta property="og:type" content="website">
     
-    <title>เครื่องมือสแกน QR Code (ลากคลุม & วางภาพ)</title>
+    <title>เครื่องมือสแกน QR Code (Modern UI)</title>
+    
+    <!-- นำเข้าฟอนต์ Sarabun จาก Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ตั้งค่า Tailwind ให้ใช้ฟอนต์ Sarabun เป็นหลัก -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        /* แอนิเมชันปุ่มสั่นเบาๆ ตอนเริ่ม */
+        .hover-float { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-float:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.2); }
+
         /* ซ่อน Scrollbar เมื่อเปิดโหมดสแกนเต็มจอ */
         body.cropping { overflow: hidden; }
         
@@ -26,101 +50,136 @@
             cursor: crosshair;
             display: block;
         }
+
+        /* ตกแต่ง Scrollbar ให้ดูโมเดิร์น (สำหรับเนื้อหายาวๆ) */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-center p-4 font-sans text-slate-800 transition-colors">
+<body class="bg-gradient-to-br from-slate-50 to-slate-200 min-h-screen flex flex-col items-center justify-center p-4 text-slate-800 transition-colors selection:bg-blue-200 selection:text-blue-900">
 
-    <!-- หน้าต่างหลัก -->
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden relative z-10">
-        <div class="bg-blue-600 p-6 text-white text-center">
-            <i data-lucide="qr-code" class="w-12 h-12 mx-auto mb-3 opacity-90"></i>
-            <h1 class="text-2xl font-bold">ตัวสแกน QR Code</h1>
-            <p class="text-blue-100 text-sm mt-1">เลือกวิธีสแกนที่คุณต้องการด้านล่าง</p>
+    <!-- หน้าต่างหลัก (ดีไซน์กระจกขุ่นนิดๆ และมุมโค้งมนมาก) -->
+    <div class="max-w-md w-full bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-white overflow-hidden relative z-10">
+        
+        <!-- Header (ดีไซน์ใหม่ แยกสีพื้นหลังออก ใช้ Gradient กับไอคอน) -->
+        <div class="pt-8 pb-4 px-6 text-center">
+            <div class="w-16 h-16 mx-auto bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 mb-5 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                <i data-lucide="qr-code" class="w-8 h-8 text-white"></i>
+            </div>
+            <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-500 tracking-tight">สแกน QR Code</h1>
+            <p class="text-slate-500 text-sm mt-1.5 font-medium">เลือกวิธีสแกนที่คุณสะดวกที่สุด</p>
         </div>
 
-        <!-- แท็บเมนู -->
-        <div class="flex border-b border-slate-200 bg-slate-50">
-            <button id="tab-scan" class="flex-1 py-3 text-sm font-semibold text-blue-600 border-b-2 border-blue-600 transition-colors flex items-center justify-center gap-2">
-                <i data-lucide="scan-line" class="w-4 h-4"></i> สแกนหน้าจอ
-            </button>
-            <button id="tab-paste" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700 transition-colors flex items-center justify-center gap-2">
-                <i data-lucide="clipboard-paste" class="w-4 h-4"></i> วางรูปภาพ
-            </button>
+        <!-- แท็บเมนู (แบบ Pill Shape ทันสมัย) -->
+        <div class="px-6 mb-2">
+            <div class="flex bg-slate-100/80 p-1.5 rounded-2xl">
+                <button id="tab-scan" class="flex-1 py-2.5 text-sm font-bold bg-white shadow-sm text-blue-600 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="scan-line" class="w-4 h-4"></i> ลากคลุมจอ
+                </button>
+                <button id="tab-paste" class="flex-1 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="clipboard-paste" class="w-4 h-4"></i> วางรูปภาพ
+                </button>
+            </div>
         </div>
 
-        <div class="p-6 text-center">
+        <div class="p-6 pt-2 text-center">
             
             <!-- Panel 1: สแกนจากหน้าจอ (ลากคลุม) -->
-            <div id="panel-scan" class="fade-in">
-                <button id="btn-start-capture" class="w-full flex flex-col items-center justify-center gap-3 bg-slate-50 hover:bg-blue-50 border-2 border-dashed border-slate-300 hover:border-blue-400 text-slate-600 hover:text-blue-600 rounded-xl p-8 transition-all duration-200 group">
-                    <div class="bg-white p-4 rounded-full shadow-sm group-hover:scale-110 transition-transform">
-                        <i data-lucide="crop" class="w-8 h-8 text-blue-500"></i>
+            <div id="panel-scan" class="fade-in mt-2">
+                <button id="btn-start-capture" class="w-full hover-float flex flex-col items-center justify-center gap-4 bg-white border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-3xl p-8 transition-all duration-300 group">
+                    <div class="bg-slate-50 p-4 rounded-2xl group-hover:bg-blue-100 transition-colors shadow-sm">
+                        <i data-lucide="crop" class="w-8 h-8 text-slate-400 group-hover:text-blue-600 transition-colors"></i>
                     </div>
                     <div>
-                        <span class="block text-lg font-semibold">คลิกเพื่อเริ่มสแกน</span>
-                        <span class="block text-sm text-slate-400 mt-1">เลือกหน้าจอ แล้วลากคลุมบริเวณ QR Code</span>
+                        <span class="block text-lg font-bold text-slate-700 group-hover:text-blue-700">คลิกเพื่อเริ่มสแกน</span>
+                        <span class="block text-sm text-slate-400 mt-1 font-medium leading-relaxed">ระบบจะให้เลือกหน้าจอ<br>จากนั้นลากเมาส์คลุม QR ได้เลย</span>
                     </div>
                 </button>
             </div>
 
             <!-- Panel 2: วางรูปภาพ (Ctrl+V) -->
-            <div id="panel-paste" class="hidden fade-in">
-                <div id="paste-area" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50 transition-colors duration-200 flex flex-col items-center justify-center">
-                    <i data-lucide="clipboard" class="w-10 h-10 text-slate-400 mb-3"></i>
-                    <p class="text-slate-600 font-medium">คลิกที่นี่ แล้วกด <kbd class="bg-slate-200 px-2 py-1 rounded text-sm font-mono text-slate-700">Ctrl</kbd> + <kbd class="bg-slate-200 px-2 py-1 rounded text-sm font-mono text-slate-700">V</kbd></p>
-                    <p class="text-slate-400 text-sm mt-2">เพื่อวางรูปภาพที่คัดลอกมา</p>
+            <div id="panel-paste" class="hidden fade-in mt-2">
+                <div id="paste-area" class="border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center bg-white transition-colors duration-300 flex flex-col items-center justify-center min-h-[220px]">
+                    <div class="bg-slate-50 p-4 rounded-2xl mb-4 shadow-sm">
+                        <i data-lucide="clipboard" class="w-8 h-8 text-slate-400"></i>
+                    </div>
+                    <p class="text-slate-600 font-bold text-lg mb-1">คลิกที่นี่ แล้วกด</p>
+                    <div class="flex items-center justify-center gap-2 mt-2">
+                        <kbd class="bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg text-sm font-sans font-semibold text-slate-700 shadow-sm">Ctrl</kbd>
+                        <span class="text-slate-400 font-medium">+</span>
+                        <kbd class="bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg text-sm font-sans font-semibold text-slate-700 shadow-sm">V</kbd>
+                    </div>
+                    <p class="text-slate-400 text-sm mt-3 font-medium">เพื่อวางรูปภาพที่คุณคัดลอกไว้</p>
                 </div>
             </div>
 
             <!-- ข้อความแจ้งเตือนสถานะ -->
-            <div id="status-message" class="hidden mt-4 p-3 rounded-lg text-sm text-center font-medium"></div>
+            <div id="status-message" class="hidden mt-4 p-3.5 rounded-xl text-sm text-center font-semibold border"></div>
 
-            <!-- พื้นที่แสดงผลลัพธ์ (ใช้ร่วมกันทั้ง 2 โหมด) -->
+            <!-- พื้นที่แสดงผลลัพธ์ -->
             <div id="result-area" class="hidden mt-6 text-left fade-in">
-                <p class="text-sm text-slate-500 mb-2 font-medium">ผลลัพธ์จาก QR Code:</p>
-                <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-3 px-1">
+                    <div class="w-1.5 h-4 bg-green-500 rounded-full"></div>
+                    <p class="text-sm text-slate-600 font-bold">ผลลัพธ์จากรูปภาพ:</p>
+                </div>
+                
+                <div class="bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] rounded-2xl p-5">
                     
                     <!-- สำหรับข้อความธรรมดา -->
                     <div id="result-text-container" class="hidden">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="file-text" class="w-5 h-5 text-green-600 mt-0.5 shrink-0"></i>
-                            <p id="result-text" class="text-slate-700 break-all"></p>
+                        <div class="flex items-start gap-3 bg-slate-50 p-4 rounded-xl">
+                            <i data-lucide="file-text" class="w-5 h-5 text-slate-500 mt-0.5 shrink-0"></i>
+                            <p id="result-text" class="text-slate-700 font-medium break-all"></p>
                         </div>
                     </div>
 
                     <!-- สำหรับลิงก์ (URL) -->
                     <div id="result-link-container" class="hidden">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="link" class="w-5 h-5 text-blue-600 mt-0.5 shrink-0"></i>
-                            <div class="w-full">
-                                <p class="text-sm text-green-700 mb-2 font-medium">พบลิงก์เว็บไซต์!</p>
-                                <a id="result-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
-                                    <span>เปิดหน้าเว็บ</span>
-                                    <i data-lucide="external-link" class="w-4 h-4"></i>
-                                </a>
-                                <p id="result-link-text" class="text-xs text-slate-500 mt-3 break-all text-center"></p>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex items-center gap-2">
+                                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <p class="text-sm text-green-700 font-bold">พบลิงก์เว็บไซต์พร้อมใช้งาน!</p>
+                            </div>
+                            
+                            <!-- ปุ่มเปิดลิงก์แบบ Modern Dark -->
+                            <a id="result-link" href="#" target="_blank" rel="noopener noreferrer" class="group relative flex items-center justify-center w-full gap-2 bg-slate-900 hover:bg-blue-600 text-white px-5 py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-blue-500/25 overflow-hidden">
+                                <span class="relative z-10 flex items-center gap-2">
+                                    เปิดหน้าเว็บ <i data-lucide="external-link" class="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
+                                </span>
+                            </a>
+                            
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <p id="result-link-text" class="text-xs text-slate-500 font-mono break-all text-center"></p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="mt-4 flex justify-center">
-                    <img id="scanned-preview" class="max-h-32 object-contain border border-slate-200 rounded-lg shadow-sm bg-slate-50" src="" alt="Scanned Image">
+                <div class="mt-5 flex justify-center">
+                    <div class="p-2 bg-white rounded-2xl shadow-sm border border-slate-100">
+                        <img id="scanned-preview" class="max-h-24 object-contain rounded-xl" src="" alt="Scanned Image">
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- โหมดลากคลุมหน้าจอ (Overlay แบบเต็มจอ) -->
-    <div id="crop-overlay" class="hidden fixed inset-0 z-50 bg-black flex justify-center items-center select-none">
+    <div id="crop-overlay" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex justify-center items-center select-none transition-opacity">
         <canvas id="crop-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
         
-        <div class="absolute top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-bounce pointer-events-none">
-            <i data-lucide="mouse-pointer-click" class="w-5 h-5 text-blue-600"></i>
-            <span class="font-medium text-slate-800">คลิกค้างแล้วลากคลุม บริเวณ QR Code</span>
+        <div class="absolute top-8 left-1/2 -translate-x-1/2 bg-white px-6 py-3.5 rounded-full shadow-2xl flex items-center gap-3 z-50 animate-bounce pointer-events-none border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-blue-600"></i>
+            </div>
+            <span class="font-bold text-slate-700">คลิกค้างแล้วลากคลุม QR Code</span>
         </div>
         
-        <button id="btn-cancel-crop" class="absolute top-6 right-6 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-colors flex items-center gap-2 z-50">
+        <button id="btn-cancel-crop" class="absolute top-8 right-8 bg-white/10 hover:bg-red-500 text-white border border-white/20 hover:border-red-500 px-5 py-2.5 rounded-xl font-bold shadow-lg transition-all duration-300 flex items-center gap-2 z-50 backdrop-blur-md">
             <i data-lucide="x" class="w-4 h-4"></i> ยกเลิก
         </button>
     </div>
@@ -164,24 +223,27 @@
                 hideResult();
                 statusMessage.classList.add('hidden');
 
+                const activeClasses = ['bg-white', 'shadow-sm', 'text-blue-600', 'font-bold'];
+                const inactiveClasses = ['text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-200/50', 'font-semibold'];
+
                 if (tabId === 'scan') {
-                    // Set active style for scan
-                    tabScan.classList.add('text-blue-600', 'border-blue-600');
-                    tabScan.classList.remove('text-slate-500', 'border-transparent');
-                    // Set inactive style for paste
-                    tabPaste.classList.remove('text-blue-600', 'border-blue-600');
-                    tabPaste.classList.add('text-slate-500', 'border-transparent');
-                    // Show/Hide panels
+                    // Update Scan Tab
+                    tabScan.classList.add(...activeClasses);
+                    tabScan.classList.remove(...inactiveClasses);
+                    // Update Paste Tab
+                    tabPaste.classList.remove(...activeClasses);
+                    tabPaste.classList.add(...inactiveClasses);
+                    
                     panelScan.classList.remove('hidden');
                     panelPaste.classList.add('hidden');
                 } else {
-                    // Set active style for paste
-                    tabPaste.classList.add('text-blue-600', 'border-blue-600');
-                    tabPaste.classList.remove('text-slate-500', 'border-transparent');
-                    // Set inactive style for scan
-                    tabScan.classList.remove('text-blue-600', 'border-blue-600');
-                    tabScan.classList.add('text-slate-500', 'border-transparent');
-                    // Show/Hide panels
+                    // Update Paste Tab
+                    tabPaste.classList.add(...activeClasses);
+                    tabPaste.classList.remove(...inactiveClasses);
+                    // Update Scan Tab
+                    tabScan.classList.remove(...activeClasses);
+                    tabScan.classList.add(...inactiveClasses);
+                    
                     panelPaste.classList.remove('hidden');
                     panelScan.classList.add('hidden');
                 }
@@ -196,8 +258,9 @@
                     if (panelPaste.classList.contains('hidden')) {
                         switchTab('paste');
                     }
-                    pasteArea.classList.add('bg-blue-50', 'border-blue-400');
-                    setTimeout(() => pasteArea.classList.remove('bg-blue-50', 'border-blue-400'), 300);
+                    // Visual feedback modern
+                    pasteArea.classList.add('bg-blue-50/50', 'border-blue-400', 'scale-[0.98]');
+                    setTimeout(() => pasteArea.classList.remove('bg-blue-50/50', 'border-blue-400', 'scale-[0.98]'), 200);
                 }
             });
 
@@ -213,14 +276,12 @@
                 }
 
                 if (!imageItem) {
-                    // แจ้งเตือนเฉพาะถ้าผู้ใช้อยู่ในหน้าวางรูปภาพอยู่แล้ว
                     if (!panelPaste.classList.contains('hidden')) {
-                        showStatus('ไม่พบรูปภาพใน Clipboard กรุณาแน่ใจว่าได้คัดลอกรูปภาพมาแล้ว', 'error');
+                        showStatus('ไม่พบรูปภาพใน Clipboard กรุณาคัดลอกรูปภาพใหม่อีกครั้ง', 'error');
                     }
                     return;
                 }
 
-                // สลับมาหน้า Paste อัตโนมัติและเคลียร์จอ
                 switchTab('paste');
                 
                 const blob = imageItem.getAsFile();
@@ -235,7 +296,7 @@
                         canvas.height = img.height;
                         context.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        scannedPreview.src = img.src; // แสดงภาพที่วาง
+                        scannedPreview.src = img.src;
                         
                         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                         readQRFromImageData(imageData);
@@ -260,7 +321,7 @@
                     video.muted = true;
                     await video.play();
 
-                    await new Promise(resolve => setTimeout(resolve, 300)); // รอเฟรมแรก
+                    await new Promise(resolve => setTimeout(resolve, 300));
 
                     const vWidth = video.videoWidth;
                     const vHeight = video.videoHeight;
@@ -271,12 +332,12 @@
                     const origCtx = originalCapturedImage.getContext('2d');
                     origCtx.drawImage(video, 0, 0, vWidth, vHeight);
 
-                    stream.getTracks().forEach(track => track.stop()); // หยุดแชร์จอ
+                    stream.getTracks().forEach(track => track.stop());
 
                     openCropOverlay();
                 } catch (err) {
                     console.error("Screen Capture Error:", err);
-                    showStatus('ยกเลิกการแชร์หน้าจอ หรือเบราว์เซอร์ไม่รองรับ', 'error');
+                    showStatus('ยกเลิกการแชร์หน้าจอแล้ว', 'error');
                 }
             });
 
@@ -318,7 +379,7 @@
                 ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
                 ctx.drawImage(originalCapturedImage, renderInfo.drawX, renderInfo.drawY, renderInfo.drawWidth, renderInfo.drawHeight);
 
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)'; // สี Overlay ทันสมัยขึ้น
                 ctx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
 
                 if (startX !== undefined && endX !== undefined) {
@@ -329,23 +390,45 @@
 
                     ctx.save();
                     ctx.beginPath();
-                    ctx.rect(rectX, rectY, rectW, rectH);
+                    // มุมโค้งตอน Crop
+                    ctx.roundRect ? ctx.roundRect(rectX, rectY, rectW, rectH, 8) : ctx.rect(rectX, rectY, rectW, rectH);
                     ctx.clip();
                     ctx.drawImage(originalCapturedImage, renderInfo.drawX, renderInfo.drawY, renderInfo.drawWidth, renderInfo.drawHeight);
                     ctx.restore();
 
+                    // เส้นประสีฟ้าสว่าง
                     ctx.strokeStyle = '#3b82f6';
                     ctx.lineWidth = 2;
-                    ctx.setLineDash([5, 5]);
-                    ctx.strokeRect(rectX, rectY, rectW, rectH);
+                    ctx.setLineDash([6, 6]);
+                    ctx.lineDashOffset = Date.now() / 20; // Animate เส้นประ
+                    if(ctx.roundRect) {
+                        ctx.beginPath();
+                        ctx.roundRect(rectX, rectY, rectW, rectH, 8);
+                        ctx.stroke();
+                    } else {
+                        ctx.strokeRect(rectX, rectY, rectW, rectH);
+                    }
                     
+                    // มุมจับ (Corners)
                     ctx.setLineDash([]);
                     ctx.lineWidth = 4;
-                    const cornerSize = 10;
-                    ctx.strokeRect(rectX-2, rectY-2, cornerSize, cornerSize); 
-                    ctx.strokeRect(rectX+rectW-cornerSize+2, rectY-2, cornerSize, cornerSize);
-                    ctx.strokeRect(rectX-2, rectY+rectH-cornerSize+2, cornerSize, cornerSize);
-                    ctx.strokeRect(rectX+rectW-cornerSize+2, rectY+rectH-cornerSize+2, cornerSize, cornerSize);
+                    ctx.strokeStyle = '#fff';
+                    const cornerSize = 16;
+                    
+                    ctx.beginPath();
+                    // บนซ้าย
+                    ctx.moveTo(rectX, rectY + cornerSize); ctx.lineTo(rectX, rectY); ctx.lineTo(rectX + cornerSize, rectY);
+                    // บนขวา
+                    ctx.moveTo(rectX + rectW - cornerSize, rectY); ctx.lineTo(rectX + rectW, rectY); ctx.lineTo(rectX + rectW, rectY + cornerSize);
+                    // ล่างขวา
+                    ctx.moveTo(rectX + rectW, rectY + rectH - cornerSize); ctx.lineTo(rectX + rectW, rectY + rectH); ctx.lineTo(rectX + rectW - cornerSize, rectY + rectH);
+                    // ล่างซ้าย
+                    ctx.moveTo(rectX + cornerSize, rectY + rectH); ctx.lineTo(rectX, rectY + rectH); ctx.lineTo(rectX, rectY + rectH - cornerSize);
+                    ctx.stroke();
+                }
+                
+                if (isSelecting) {
+                    requestAnimationFrame(drawCropInterface); // ให้เส้นประขยับได้
                 }
             }
 
@@ -362,7 +445,6 @@
                 if (!isSelecting) return;
                 endX = e.clientX;
                 endY = e.clientY;
-                drawCropInterface();
             });
 
             cropCanvas.addEventListener('mouseup', () => {
@@ -404,7 +486,7 @@
                 
                 snippetCtx.drawImage(originalCapturedImage, safeX, safeY, safeW, safeH, 0, 0, safeW, safeH);
 
-                scannedPreview.src = snippetCanvas.toDataURL('image/png'); // แสดงภาพที่ลากคลุม
+                scannedPreview.src = snippetCanvas.toDataURL('image/png');
                 const imageData = snippetCtx.getImageData(0, 0, safeW, safeH);
                 
                 closeCropOverlay();
@@ -421,7 +503,7 @@
                 if (code) {
                     displayResult(code.data);
                 } else {
-                    showStatus('ไม่พบ QR Code ในภาพ หรือภาพอาจเบลอ/เล็กเกินไป กรุณาลองใหม่อีกครั้ง', 'error');
+                    showStatus('ไม่พบ QR Code ในภาพ ลองใหม่อีกครั้ง', 'error');
                 }
             }
 
@@ -451,8 +533,8 @@
             function showStatus(msg, type) {
                 statusMessage.textContent = msg;
                 statusMessage.className = type === 'error' 
-                    ? 'mt-4 p-3 rounded-lg text-sm text-center font-medium bg-red-50 text-red-600 border border-red-200 fade-in'
-                    : 'mt-4 p-3 rounded-lg text-sm text-center font-medium bg-blue-50 text-blue-600 border border-blue-200 fade-in';
+                    ? 'mt-4 p-3.5 rounded-xl text-sm text-center font-bold bg-red-50 text-red-600 border border-red-100 fade-in'
+                    : 'mt-4 p-3.5 rounded-xl text-sm text-center font-bold bg-blue-50 text-blue-600 border border-blue-100 fade-in';
                 statusMessage.classList.remove('hidden');
             }
         });
